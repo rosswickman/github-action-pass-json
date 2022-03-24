@@ -1,0 +1,99 @@
+name: "Demo Pass JSON Input"
+
+on:
+  workflow_dispatch:
+    inputs:
+      config:
+        description: 'Path of config file'
+        required: true
+        default: config/config.json
+
+
+jobs:
+
+  trigger:
+    if: github.ref == 'refs/heads/main'
+    name: Trigger Workflow
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Get JSON
+        run: |
+          #!/usr/bin/env bash
+          # exit if any command exits with non-zero status
+          set -e
+          TEMP_FILE="temp.json"
+          echo "Getting Config File: ${{ github.event.inputs.config }}.json"
+          config=$(cat ${{ github.event.inputs.config }}.json)
+
+      - name: Trigger Workflow
+        run: |
+          #!/usr/bin/env bash
+          # exit if any command exits with non-zero status
+          echo "Triggering Workflow"
+          curl \
+            -X POST \
+            https://api.github.com/repos/rwickit/action-pass-json/actions/workflows/take-inputs-json.yml/dispatches \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: Bearer ${{ secrets.GIT_TOKEN }}" \
+            -d "{\"ref\":\"main\",\"inputs\":$config}" > $TEMP_FILE
+          echo $(cat $TEMP_FILE)
+
+        ## Single Job
+#       - name: Trigger Workflow
+#         run: |
+#           #!/usr/bin/env bash
+#           # exit if any command exits with non-zero status
+#           set -e
+#           TEMP_FILE="temp.json"
+#           echo "Getting Config File: ${{ github.event.inputs.config }}.json"
+#           config=$(cat ${{ github.event.inputs.config }}.json)
+#           echo "Triggering Deployment Workflow"
+#           curl \
+#             -X POST \
+#             https://api.github.com/repos/rwickit/action-pass-json/actions/workflows/take-inputs-json.yml/dispatches \
+#             -H "Accept: application/vnd.github.v3+json" \
+#             -H "Authorization: Bearer ${{ secrets.GIT_TOKEN }}" \
+#             -d "{\"ref\":\"master\",\"inputs\":$config}" > $TEMP_FILE
+#            echo $(cat $TEMP_FILE)
+
+  confirm:
+    needs: [trigger]
+    if: github.ref == 'refs/heads/main'
+    name: Confirm Workflow
+    runs-on: ubuntu-latest
+    steps:
+
+      ## Graciously stolen/modified from https://tabris.com/observing-workflow-run-status-on-github/
+      - name: Validate Deployment Started
+        run: |
+          #!/usr/bin/env bash
+          # exit if any command exits with non-zero status
+          set -e
+          REPO="rwickit/action-pass-json"
+          TEMP_FILE="temp.json"
+          SLEEP_INTERVAL=30
+          echo "Checking status of workflow in ${REPO} repository:"
+          curl \
+            --silent \
+            --location \
+            --request GET \
+            --header 'Accept: application/vnd.github.everest-preview+json' \
+            --header 'Content-Type: application/json' \
+            --header "Authorization: Token ${{ secrets.GIT_TOKEN }}" \
+            --header 'cache-control: no-cache' \
+            "https://api.github.com/repos/${REPO}/actions/runs" > $TEMP_FILE
+            STATUS=$(jq -r ".workflow_runs | sort_by( .created_at ) | .[-1] | .status" $TEMP_FILE)
+            echo "Workflow ${REPO} state: ${STATUS}"
+            if [ "$STATUS" != "completed" ]; then
+                echo "Workflow was triggered in the ${REPO} project"
+                echo "https://github.com/${REPO}/actions/workflows/take-inputs-json.yml"
+                exit 0
+            else
+              echo "ERROR: Workflow in the ${REPO} project did not trigger."
+              exit 1
+            fi
+          rm $TEMP_FILE || true

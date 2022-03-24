@@ -1,0 +1,22 @@
+name: "Demo Take JSON Input"
+
+on:
+  workflow_dispatch:
+    inputs:
+      Name:
+        description: 'Customer Name'
+        required: true
+      Id:
+        description: 'Customer ID'
+        required: true
+        
+jobs:
+
+  showInputs:
+    name: Show Inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Inputs from JSOn
+        run: |
+          echo Name: ${{ inputs.Name }}
+          echo Id: ${{ inputs.Id }}
