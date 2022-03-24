@@ -16,7 +16,7 @@ jobs:
     name: Show Inputs
     runs-on: ubuntu-latest
     steps:
-      - name: Print Inputs from JSOn
+      - name: Print Inputs from JSON
         run: |
-          echo Name: ${{ inputs.Name }}
-          echo Id: ${{ inputs.Id }}
+          echo Name: ${{ github.event.inputs.Name }}
+          echo Id: ${{ github.event.inputs.Id }}
