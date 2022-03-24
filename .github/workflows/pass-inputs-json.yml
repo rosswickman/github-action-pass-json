@@ -26,8 +26,8 @@ jobs:
           # exit if any command exits with non-zero status
           set -e
           TEMP_FILE="temp.json"
-          echo "Getting Config File: ${{ github.event.inputs.config }}.json"
-          config=$(cat ${{ github.event.inputs.config }}.json)
+          echo "Getting Config File: ${{ github.event.inputs.config }}"
+          config=$(cat ${{ github.event.inputs.config }})
 
       - name: Trigger Workflow
         run: |
