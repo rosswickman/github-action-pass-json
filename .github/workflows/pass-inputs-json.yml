@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
 
-      - name: Get JSON
+      - name: Get JSON & Trigger Workflow
         run: |
           #!/usr/bin/env bash
           # exit if any command exits with non-zero status
@@ -28,10 +28,6 @@ jobs:
           TEMP_FILE="temp.json"
           echo "Getting Config File: ${{ github.event.inputs.config }}"
           config=$(cat ${{ github.event.inputs.config }})
-
-      - name: Trigger Workflow
-        run: |
-          #!/usr/bin/env bash
           # exit if any command exits with non-zero status
           echo "Triggering Workflow"
           curl \
@@ -41,24 +37,6 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.GIT_TOKEN }}" \
             -d "{\"ref\":\"main\",\"inputs\":$config}" > $TEMP_FILE
           echo $(cat $TEMP_FILE)
-
-        ## Single Job
-#       - name: Trigger Workflow
-#         run: |
-#           #!/usr/bin/env bash
-#           # exit if any command exits with non-zero status
-#           set -e
-#           TEMP_FILE="temp.json"
-#           echo "Getting Config File: ${{ github.event.inputs.config }}.json"
-#           config=$(cat ${{ github.event.inputs.config }}.json)
-#           echo "Triggering Deployment Workflow"
-#           curl \
-#             -X POST \
-#             https://api.github.com/repos/rwickit/action-pass-json/actions/workflows/take-inputs-json.yml/dispatches \
-#             -H "Accept: application/vnd.github.v3+json" \
-#             -H "Authorization: Bearer ${{ secrets.GIT_TOKEN }}" \
-#             -d "{\"ref\":\"master\",\"inputs\":$config}" > $TEMP_FILE
-#            echo $(cat $TEMP_FILE)
 
   confirm:
     needs: [trigger]
